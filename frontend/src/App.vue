@@ -2,8 +2,8 @@
   <v-app>
     <v-app-bar
       app
-      color="indigo"
-      dark
+      color="primary"
+      height="60"
     >
       <div class="d-flex align-center">
         <v-img
@@ -12,7 +12,7 @@
           contain
           min-width="100"
           src="./assets/logo.webp"
-          width="100"
+          width="200"
         />
       </div>
       <v-spacer></v-spacer>
