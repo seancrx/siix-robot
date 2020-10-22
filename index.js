@@ -3,24 +3,24 @@ const express = require('express');
 const socketio = require('socket.io');
 const http = require('http');
 const path = require('path');
-// const rosnodejs = require('rosnodejs');
+const rosnodejs = require('rosnodejs');
 
 
 // ========== ROS Package ==========
-// const std_msgs = rosnodejs.require('std_msgs').msg;
+const std_msgs = rosnodejs.require('std_msgs').msg;
 
 
 // ========== Utils ==========
 global.appRoot = path.resolve(__dirname);
-const rosConfig = require('./utils/rosConfig');
 const { logger, getLogs } = require('./utils/logger');
-const names = require('./utils/stationConfig');
+const {rosConfig, names, timer} = require('./utils/config');
 
 
 // ========== Variables ==========
 let clients = []; // {id: '', station: 'station1'}
 let battery = 100;
 let isLocked = false;
+let countdown = 0;
 
 
 // ========== Init express and socket.io ==========
@@ -39,42 +39,51 @@ server.listen(WSPORT, () => console.log(`WS started on port ${WSPORT}`));
 
 
 // ========== Setup ROS ==========
-// rosnodejs.initNode(rosConfig.rosNode).then(() => {
-//   console.log('ROS node started');
-// });
-// const nh = rosnodejs.nh;
+rosnodejs.initNode(rosConfig.rosNode).then(() => {
+  console.log('ROS node started');
+});
+const nh = rosnodejs.nh;
 
 // Create ROS message object
-// const ROS_BOOL = new std_msgs.Bool();
-// const ROS_UINT8 = new std_msgs.UInt8();
+const ROS_BOOL = new std_msgs.Bool();
+const ROS_UINT8 = new std_msgs.UInt8();
 
 // Subscriber and advertiser
-// const rosGoToStation = nh.advertise(rosConfig.goToStation[0], rosConfig.goToStation[1]);
-// const rosGoToCharge = nh.advertise(rosConfig.goToCharge[0], rosConfig.goToCharge[1]);
-// const rosPauseRobot = nh.advertise(rosConfig.pauseRobot[0], rosConfig.pauseRobot[1]);
-// const rosResumeRobot = nh.advertise(rosConfig.resumeRobot[0], rosConfig.resumeRobot[1]);
-// const rosStatusMessage = nh.subscribe(rosConfig.statusMessage[0], rosConfig.statusMessage[1], (data) => {
-//   broadcastStatusMessage(data.data);
-// });
-// const rosRobotPosition = nh.subscribe(rosConfig.robotPosition[0], rosConfig.robotPosition[1], (data) => {
-//   broadcastRobotPosition(data.data);
-// });
-// const rosBatteryLevel = nh.subscribe(rosConfig.batteryLevel[0], rosConfig.batteryLevel[1], (data) => {
-//   broadcastBatteryLevel(data.data);
-// });
+const rosGoToStation = nh.advertise(rosConfig.goToStation[0], rosConfig.goToStation[1]);
+const rosGoToCharge = nh.advertise(rosConfig.goToCharge[0], rosConfig.goToCharge[1]);
+const rosPauseResumeRobot = nh.advertise(rosConfig.pauseResumeRobot[0], rosConfig.pauseResumeRobot[1]);
+const rosStatusMessage = nh.subscribe(rosConfig.statusMessage[0], rosConfig.statusMessage[1], (data) => {
+  broadcastStatusMessage(data.data);
+});
+const rosRobotPosition = nh.subscribe(rosConfig.robotPosition[0], rosConfig.robotPosition[1], (data) => {
+  broadcastRobotPosition(data.data);
+});
+const rosBatteryLevel = nh.subscribe(rosConfig.batteryLevel[0], rosConfig.batteryLevel[1], (data) => {
+  broadcastBatteryLevel(data.data);
+});
+const rosMissionComplete = nh.subscribe(rosConfig.missionComplete[0], rosConfig.missionComplete[1], (data) => {
+  broadcastMissionComplete(data.data);
+});
 
 
 // ========== Socket.io ==========
 io.on('connection', (socket) => {
   io.emit('station-names', names);
+  io.emit('timer', timer);
+  io.emit('lock', isLocked);
+  io.emit('status-message', 'Starting up...');
 
   socket.on('client-station', station => newClient(socket.id, station));
   socket.on('to-station', station => toStation(station));
   socket.on('pause', () => pauseRobot());
   socket.on('resume', () => resumeRobot());
   socket.on('charge', () => toCharge());
+  socket.on('cancel', () => cancelRobot());
   socket.on('disconnect', () => clientDisconnected(socket.id));
 });
+setInterval(() => {
+  io.emit('battery', battery);
+}, 2000);
 
 
 // ========== Functions ==========
@@ -87,7 +96,16 @@ function broadcastRobotPosition(pos) {
 }
 
 function broadcastBatteryLevel(bat) {
-  io.emit('battery', bat);
+  battery = bat;
+}
+
+function broadcastMissionComplete(state) {
+  isLocked = state === 1 ? true : false;
+  io.emit('lock', isLocked);
+  setTimeout(() => {
+    isLocked = false;
+    io.emit('lock', isLocked);
+  }, timer.destination);
 }
 
 function newClient(id, station) {
@@ -96,39 +114,54 @@ function newClient(id, station) {
 }
 
 function toStation(station) {
-  // switch (station) {
-  //   case station1:
-  //     ROS_UINT8.data = 1;
-  //     break;
-  //   case station2:
-  //     ROS_UINT8.data = 2;
-  //     break;
-  //   case station3:
-  //     ROS_UINT8.data = 3;
-  //     break;
-  //   case station4:
-  //     ROS_UINT8.data = 4;
-  //     break;
-  //   default:
-  //     logger.error('Invalid station number requested.');
-  //     break;
-  // }
-  // rosGoToStation.publish(ROS_UINT8);
+  if (!isLocked) {
+    switch (station) {
+      case station1:
+        ROS_UINT8.data = 1;
+        break;
+      case station2:
+        ROS_UINT8.data = 2;
+        break;
+      case station3:
+        ROS_UINT8.data = 3;
+        break;
+      case station4:
+        ROS_UINT8.data = 4;
+        break;
+      default:
+        logger.error('Invalid station number requested.');
+        break;
+    }
+    rosGoToStation.publish(ROS_UINT8);
+  }
 }
 
 function pauseRobot() {
-  // ROS_UINT8.data = 2;
-  // rosPauseRobot.publish(ROS_UINT8);
+  ROS_UINT8.data = 1;
+  rosPauseResumeRobot.publish(ROS_UINT8);
+  isLocked = true;
+  io.emit('lock', isLocked);
+  setTimeout(() => {
+    isLocked = false;
+    io.emit('lock', isLocked);
+  }, timer.pause);
 }
 
 function resumeRobot() {
-  // ROS_UINT8 = 1;
-  // rosResumeRobot.publish(ROS_UINT8);
+  ROS_UINT8 = 2;
+  rosPauseResumeRobot.publish(ROS_UINT8);
+  isLocked = false;
+  io.emit('lock', isLocked);
+}
+
+function cancelRobot() {
+  ROS_UINT8 = 1;
+  rosCancelRobot.publish(ROS_UNIT8);
 }
 
 function toCharge() {
-  // ROS_UINT8 = 1;
-  // rosGoToCharge.publish(ROS_UINT8);
+  ROS_UINT8 = 1;
+  rosGoToCharge.publish(ROS_UINT8);
 }
 
 function clientDisconnected(id) {

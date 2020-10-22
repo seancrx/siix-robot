@@ -16,7 +16,7 @@
         />
       </div>
       <v-spacer></v-spacer>
-      <v-icon>mdi-battery-60</v-icon>60%
+      <v-icon>{{batteryIcon}}</v-icon>{{battery}}%
     </v-app-bar>
 
     <v-main>
@@ -30,13 +30,34 @@ import Home from './components/Home';
 
 export default {
   name: 'App',
-
   components: {
     Home,
   },
-
-  data: () => ({
-    //
-  }),
+  sockets: {
+    connect() {
+    },
+  },
+  mounted() {
+    this.sockets.subscribe('battery', bat => {
+      this.battery = bat;
+    });
+  },
+  data: () => {
+    return {
+      battery: 100,
+      batteryIcon: 'mdi-battery'
+    }
+  },
+  watch: {
+    battery() {
+      if (this.battery === 100) {
+        this.batteryIcon = 'mdi-battery'
+      } else if (this.battery < 10) {
+        this.batteryIcon = 'mdi-battery-outline';
+      } else {
+        this.batteryIcon = `mdi-battery-${Math.floor(this.battery/10)}0`
+      }
+    }
+  }
 };
 </script>
