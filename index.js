@@ -136,19 +136,19 @@ function pauseRobot() {
 }
 
 function resumeRobot() {
-  ROS_UINT8 = 2;
+  ROS_UINT8.data = 2;
   rosPauseResumeRobot.publish(ROS_UINT8);
   isLocked = false;
   io.emit('lock', isLocked);
 }
 
 function cancelRobot() {
-  ROS_UINT8 = 1;
+  ROS_UINT8.data = 1;
   rosCancelRobot.publish(ROS_UNIT8);
 }
 
 function toCharge() {
-  ROS_UINT8 = 1;
+  ROS_UINT8.data = 1;
   rosGoToCharge.publish(ROS_UINT8);
 }
 
