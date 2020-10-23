@@ -1,12 +1,12 @@
 const rosConfig = {
   rosNode: 'nodename',
-  goToStation: ['/mission', 'std_msgs/UInt8.msg'],
-  goToCharge: ['/charge', 'std_msgs/Bool.msg'],
-  pauseResumeRobot: ['/pause', 'std_msgs/Bool.msg'],
-  statusMessage: ['/mission_status', 'std_msgs/String.msg'],
-  robotPosition: ['/tf_pose', 'geometry_msgs/Pose.msg'],
-  batteryLevel: ['/battery', 'std_msgs/UInt8.msg'],
-  missionComplete: ['/mission_complete', 'std_msgs/Bool.msg']
+  goToStation: ['/mission', 'std_msgs/UInt8'],
+  goToCharge: ['/charge', 'std_msgs/Bool'],
+  pauseResumeRobot: ['/pause', 'std_msgs/Bool'],
+  statusMessage: ['/mission_status', 'std_msgs/String'],
+  robotPosition: ['/tf_pose', 'geometry_msgs/Pose'],
+  batteryLevel: ['/battery', 'std_msgs/UInt8'],
+  missionComplete: ['/mission_complete', 'std_msgs/Bool']
 };
 
 const names = [
