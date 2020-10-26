@@ -32,7 +32,7 @@ const io = socketio(server);
 app.use(express.static(path.join(__dirname, 'frontend/dist')));
 
 // Listen on a port
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 5020;
 app.listen(PORT, () => console.log(`Server started on port ${PORT}`));
 const WSPORT = process.env.WSPORT || 5001;
 server.listen(WSPORT, () => console.log(`WS started on port ${WSPORT}`));
