@@ -148,8 +148,9 @@ function cancelRobot() {
 }
 
 function toCharge() {
-  ROS_UINT8.data = 1;
-  rosGoToCharge.publish(ROS_UINT8);
+  ROS_UINT8.data = 5;
+  // rosGoToCharge.publish(ROS_UINT8);
+  rosGoToStation.publish(ROS_UINT8);
 }
 
 function clientDisconnected(id) {

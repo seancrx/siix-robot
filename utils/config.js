@@ -1,6 +1,6 @@
 const rosConfig = {
   rosNode: 'nodename',
-  goToStation: ['/mission', 'std_msgs/UInt8'],
+  goToStation: ['/goal', 'std_msgs/UInt8'],
   goToCharge: ['/charge', 'std_msgs/Bool'],
   pauseResumeRobot: ['/pause', 'std_msgs/Bool'],
   statusMessage: ['/mission_status', 'std_msgs/String'],
