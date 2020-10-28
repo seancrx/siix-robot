@@ -1,8 +1,8 @@
 <template>
   <div>
-    <v-banner single-line>
-      <h2><v-icon slot="icon" :color="connection ? 'success' : 'error'" size="36">mdi-access-point</v-icon>
-      {{status}}</h2>
+    <v-banner sticky>
+      <h1><v-icon slot="icon" :color="connection ? 'success' : 'error'" size="36">mdi-access-point</v-icon>
+      {{status}}</h1>
     </v-banner>
     <v-container>
       <v-row class="row-height">
@@ -12,13 +12,22 @@
       </v-row>
     </v-container>
     <div class="d-flex justify-space-around pb-8 pt-4">
-      <v-card v-for="action in actions" :key="action.name" @click="actionHandler(action.method)" height="100px" width="100px" x-large :color="action.color+' lighten-2'" class="d-flex justify-center align-center flex-column action">
-        <v-icon style="font-size:2rem;">{{action.icon}}</v-icon>
-        {{action.name}}
+      <v-card :disabled="isLocked" @click="goToCharge" height="100px" width="200px" x-large :class="{'card-disabled': isLocked}" :color="isLocked ? '' : 'blue lighten-2'" class="d-flex justify-center align-center flex-column action">
+        <v-icon style="font-size:2rem;">mdi-power-plug-outline</v-icon>
+        Origin/Charge
+      </v-card>
+      <v-card v-if="isLocked" @click="resumeRobot" height="100px" width="200px" x-large color="green lighten-2" class="d-flex justify-center align-center flex-column action">
+        <v-icon style="font-size:2rem;">mdi-play</v-icon>
+        {{remainingTime === 0 ? `Resume` : `Resume (${remainingTime})`}}
+      </v-card>
+      <v-card v-else @click="pauseRobot" height="100px" width="200px" x-large color="yellow lighten-2" class="d-flex justify-center align-center flex-column action">
+        <v-icon style="font-size:2rem;">mdi-pause</v-icon>
+        Pause
       </v-card>
     </div>
     <div class="pa-8">
-      <v-card color="black" height="300" dark class="d-flex justify-center align-center">Map</v-card>
+      <div class="mapCanvas" id="map"></div>
+      <!-- <v-card color="black" height="300" dark class="d-flex justify-center align-center">Map</v-card> -->
     </div>
   </div>
 </template>
@@ -32,32 +41,7 @@ export default {
       stations: [],
       timer: {},
       isLocked: false,
-      actions: [
-        {
-          name: 'Charge',
-          icon: 'mdi-power-plug-outline',
-          color: 'blue',
-          method: 'goToCharge'
-        },
-        {
-          name: 'Pause',
-          icon: 'mdi-pause',
-          color: 'yellow',
-          method: 'pauseRobot'
-        },
-        {
-          name: 'Resume',
-          icon: 'mdi-play',
-          color: 'green',
-          method: 'resumeRobot'
-        },
-        {
-          name: 'Cancel',
-          icon: 'mdi-cancel',
-          color: 'pink',
-          method: 'cancelRobot'
-        },
-      ]
+      remainingTime: 0
     }
   },
   sockets: {
@@ -78,9 +62,11 @@ export default {
     this.sockets.subscribe('status-message', msg => {
       this.status = msg;
     });
-    this.sockets.subscribe('lock', state => {
-      this.isLocked = state;
+    this.sockets.subscribe('lock', data => {
+      this.isLocked = data.lockState;
+      this.remainingTime = data.time;
     });
+    this.initMap();
   },
   methods: {
     goToStation(station) {
@@ -103,6 +89,50 @@ export default {
     },
     unlockButtons() {
       this.isLocked = false;
+    },
+    initMap() {
+      var ros = new ROSLIB.Ros({
+          url:  'ws://' + window.location.hostname + ':9090'
+      });
+      var viewer = new ROS2D.Viewer({
+          divID: 'map',
+          width: 600,
+          height: 500
+      });
+      var gridClient = new ROS2D.OccupancyGridClient({
+          ros: ros,
+          rootObject: viewer.scene,
+          continuous: true
+      });
+      gridClient.on('change', function () {
+          viewer.scaleToDimensions(gridClient.currentGrid.width, gridClient.currentGrid.height);
+          viewer.shift(gridClient.currentGrid.pose.position.x * 1, gridClient.currentGrid.pose.position.y);
+      });
+      var robotMarker = new ROS2D.NavigationArrow({
+          size: 0.05,
+          strokeSize: 0.5,
+          pulse: true,
+          strokeColor: createjs.Graphics.getRGB(254, 0, 0),
+          fillColor: createjs.Graphics.getRGB(254, 0, 0)
+      });
+      var poseTopic = new ROSLIB.Topic({
+          ros: ros,
+          name: '/amcl_pose',
+          messageType: 'geometry_msgs/PoseWithCovarianceStamped'
+      });
+      poseTopic.subscribe(function (posewithc) {
+          var pose = posewithc.pose.pose;
+          robotMarker.x = pose.position.x;
+          robotMarker.y = -pose.position.y;
+      });
+      gridClient.rootObject.addChild(robotMarker);
+    }
+  },
+  watch: {
+    remainingTime() {
+      if (this.remainingTime > 0) {
+        setTimeout(() => this.remainingTime--, 1000);
+      }
     }
   }
 };
@@ -117,5 +147,12 @@ export default {
 }
 .action {
   font-size: 1.5rem;
+}
+.card-disabled {
+  background-color: rgba(0, 0, 0, .12)!important;
+  color: rgba(0, 0, 0, .26)!important;
+}
+.mapCanvas {
+  overflow: auto;
 }
 </style>

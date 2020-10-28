@@ -34,7 +34,7 @@ app.use(express.static(path.join(__dirname, 'frontend/dist')));
 // Listen on a port
 const PORT = process.env.PORT || 5020;
 app.listen(PORT, () => console.log(`Server started on port ${PORT}`));
-const WSPORT = process.env.WSPORT || 5001;
+const WSPORT = process.env.WSPORT || 5021;
 server.listen(WSPORT, () => console.log(`WS started on port ${WSPORT}`));
 
 
@@ -50,7 +50,6 @@ const ROS_UINT8 = new std_msgs.UInt8();
 
 // Subscriber and advertiser
 const rosGoToStation = nh.advertise(rosConfig.goToStation[0], rosConfig.goToStation[1]);
-const rosGoToCharge = nh.advertise(rosConfig.goToCharge[0], rosConfig.goToCharge[1]);
 const rosPauseResumeRobot = nh.advertise(rosConfig.pauseResumeRobot[0], rosConfig.pauseResumeRobot[1]);
 const rosStatusMessage = nh.subscribe(rosConfig.statusMessage[0], rosConfig.statusMessage[1], (data) => {
   broadcastStatusMessage(data.data);
@@ -70,7 +69,7 @@ const rosMissionComplete = nh.subscribe(rosConfig.missionComplete[0], rosConfig.
 io.on('connection', (socket) => {
   io.emit('station-names', names);
   io.emit('timer', timer);
-  io.emit('lock', isLocked);
+  io.emit('lock', {lockState: isLocked, time: 0});
   io.emit('status-message', 'Starting up...');
 
   socket.on('client-station', station => newClient(socket.id, station));
@@ -101,10 +100,10 @@ function broadcastBatteryLevel(bat) {
 
 function broadcastMissionComplete(state) {
   isLocked = state === 1 ? true : false;
-  io.emit('lock', isLocked);
+  io.emit('lock', {lockState: isLocked, time: timer.destination});
   setTimeout(() => {
     isLocked = false;
-    io.emit('lock', isLocked);
+    io.emit('lock', {lockState: isLocked, time: 0});
   }, timer.destination);
 }
 
@@ -118,6 +117,8 @@ function toStation(station) {
     if (names.filter(name => name.id === station).length !== 0) {
       ROS_UINT8.data = station;
       rosGoToStation.publish(ROS_UINT8);
+      isLocked = true;
+      io.emit('lock', {lockState: isLocked, time: 0});
     } else {
       logger.error('Invalid station number requested.');
     }
@@ -125,21 +126,21 @@ function toStation(station) {
 }
 
 function pauseRobot() {
-  ROS_UINT8.data = 1;
-  rosPauseResumeRobot.publish(ROS_UINT8);
+  ROS_BOOL.data = true;
+  rosPauseResumeRobot.publish(ROS_BOOL);
   isLocked = true;
-  io.emit('lock', isLocked);
+  io.emit('lock', {lockState: isLocked, timer: timer.pause});
   setTimeout(() => {
     isLocked = false;
-    io.emit('lock', isLocked);
+    io.emit('lock', {lockState: isLocked, timer: 0});
   }, timer.pause);
 }
 
 function resumeRobot() {
-  ROS_UINT8.data = 2;
-  rosPauseResumeRobot.publish(ROS_UINT8);
+  ROS_BOOL.data = false;
+  rosPauseResumeRobot.publish(ROS_BOOL);
   isLocked = false;
-  io.emit('lock', isLocked);
+  io.emit('lock', {lockState: isLocked, timer: 0});
 }
 
 function cancelRobot() {
@@ -149,7 +150,6 @@ function cancelRobot() {
 
 function toCharge() {
   ROS_UINT8.data = 5;
-  // rosGoToCharge.publish(ROS_UINT8);
   rosGoToStation.publish(ROS_UINT8);
 }
 

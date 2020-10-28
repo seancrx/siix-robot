@@ -1,7 +1,6 @@
 const rosConfig = {
   rosNode: 'nodename',
   goToStation: ['/goal', 'std_msgs/UInt8'],
-  goToCharge: ['/charge', 'std_msgs/Bool'],
   pauseResumeRobot: ['/pause', 'std_msgs/Bool'],
   statusMessage: ['/mission_status', 'std_msgs/String'],
   robotPosition: ['/tf_pose', 'geometry_msgs/Pose'],
@@ -34,7 +33,7 @@ const names = [
 
 const timer = {
   pause: 6000000,
-  destination: 30000
+  destination: 20000
 };
 
 module.exports = {rosConfig, names, timer};
