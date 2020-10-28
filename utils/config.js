@@ -12,22 +12,22 @@ const rosConfig = {
 const names = [
   {
     id: 1,
-    name: 'Station 1',
+    name: '1.Micro Lab',
     color: 'red'
   },
   {
     id: 2,
-    name: 'Station 2',
+    name: '2.Reception',
     color: 'red'
   },
   {
     id: 3,
-    name: 'Station 3',
+    name: '3.Blood Bank',
     color: 'red'
   },
   {
     id: 4,
-    name: 'Station 4',
+    name: '4.Special Lab',
     color: 'red'
   }
 ];
