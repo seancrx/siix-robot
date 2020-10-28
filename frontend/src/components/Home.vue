@@ -25,7 +25,7 @@
         Pause
       </v-card>
     </div>
-    <div class="pa-8">
+    <div class="pa-8 d-flex justify-center">
       <div class="mapCanvas" id="map"></div>
       <!-- <v-card color="black" height="300" dark class="d-flex justify-center align-center">Map</v-card> -->
     </div>
