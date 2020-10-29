@@ -4,7 +4,7 @@ const rosConfig = {
   pauseResumeRobot: ['/pause', 'std_msgs/Bool'],
   statusMessage: ['/mission_status', 'std_msgs/String'],
   robotPosition: ['/tf_pose', 'geometry_msgs/Pose'],
-  batteryLevel: ['/battery', 'std_msgs/UInt8'],
+  batteryLevel: ['/merlin/battery_voltage', 'std_msgs/Float64'],
   missionComplete: ['/mission_complete', 'std_msgs/Bool']
 };
 
