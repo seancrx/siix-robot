@@ -7,27 +7,38 @@
     <v-container>
       <v-row class="row-height">
         <v-col v-for="station in stations" :key="station.id" cols="6" class="d-flex justify-center align-center">
-          <v-btn :disabled="isLocked" @click="goToStation(station.id)" height="100%" width="100%" :color="station.color+' lighten-2'"><span class="big-text">{{station.name}}</span></v-btn>
+          <v-btn :disabled="locks.stationsIsLocked" @click="goToStation(station.id)" height="100%" width="100%" :color="station.color+' lighten-2'"><span class="big-text">{{station.name}}</span></v-btn>
         </v-col>
       </v-row>
     </v-container>
-    <div class="d-flex justify-space-around pb-8 pt-4">
-      <v-card :disabled="isLocked" @click="goToCharge" height="100px" width="200px" x-large :class="{'card-disabled': isLocked}" :color="isLocked ? '' : 'blue lighten-2'" class="d-flex justify-center align-center flex-column action">
+    <div class="d-flex flex-wrap justify-space-around pb-8 pt-4">
+      <v-card :disabled="locks.stationIsLocked" @click="goToCharge" height="100px" min-width="200px" x-large :class="{'card-disabled': locks.stationsIsLocked}" :color="locks.stationsIsLocked ? '' : 'blue lighten-2'" class="ma-2 d-flex justify-center align-center flex-column action">
         <v-icon style="font-size:2rem;">mdi-power-plug-outline</v-icon>
         Origin/Charge
       </v-card>
-      <v-card v-if="isLocked" @click="resumeRobot" height="100px" width="200px" x-large color="green lighten-2" class="d-flex justify-center align-center flex-column action">
+      <v-card :disabled="locks.opIsLocked" v-if="!locks.opIsPaused" @click="resumeOperation" height="100px" min-width="200px" x-large :class="{'card-disabled': locks.opIsLocked}" :color="locks.opIsLocked ? '' : 'green lighten-2'" class="ma-2 d-flex justify-center align-center flex-column action">
         <v-icon style="font-size:2rem;">mdi-play</v-icon>
-        {{remainingTime === 0 ? `Resume` : `Resume (${remainingTime})`}}
+        {{remainingTime === 0 ? `Operation Resume` : `Operation Resume (${remainingTime})`}}
       </v-card>
-      <v-card v-else @click="pauseRobot" height="100px" width="200px" x-large color="yellow lighten-2" class="d-flex justify-center align-center flex-column action">
+      <v-card :disabled="locks.opIsLocked" v-else @click="pauseOperation" height="100px" min-width="200px" x-large :class="{'card-disabled': locks.opIsLocked}" :color="locks.opIsLocked ? '' : 'yellow lighten-2'" class="ma-2 d-flex justify-center align-center flex-column action">
         <v-icon style="font-size:2rem;">mdi-pause</v-icon>
-        Pause
+        Operation Pause
+      </v-card>
+      <v-card :disabled="locks.robotIsLocked" v-if="!locks.robotIsPaused" @click="resumeRobot" height="100px" min-width="200px" x-large :class="{'card-disabled': locks.robotIsLocked}" :color="locks.robotIsLocked ? '' : 'green lighten-2'" class="ma-2 d-flex justify-center align-center flex-column action">
+        <v-icon style="font-size:2rem;">mdi-play</v-icon>
+        Robot Resume
+      </v-card>
+      <v-card :disabled="locks.robotIsLocked" v-else @click="pauseRobot" height="100px" min-width="200px" x-large :class="{'card-disabled': locks.robotIsLocked}" :color="locks.robotIsLocked ? '' : 'yellow lighten-2'" class="ma-2 d-flex justify-center align-center flex-column action">
+        <v-icon style="font-size:2rem;">mdi-pause</v-icon>
+        Robot Pause
+      </v-card>
+      <v-card @click="abortRobot" height="100px" min-width="200px" x-large color="error" class="ma-2 d-flex justify-center align-center flex-column action">
+        <v-icon style="font-size:2rem;">mdi-cancel</v-icon>
+        Abort
       </v-card>
     </div>
     <div class="pa-8 d-flex justify-center">
       <div class="mapCanvas" id="map"></div>
-      <!-- <v-card color="black" height="300" dark class="d-flex justify-center align-center">Map</v-card> -->
     </div>
   </div>
 </template>
@@ -40,7 +51,8 @@ export default {
       status: '',
       stations: [],
       timer: {},
-      isLocked: false,
+      locks: {},
+      timerStarts: false,
       remainingTime: 0
     }
   },
@@ -62,9 +74,12 @@ export default {
     this.sockets.subscribe('status-message', msg => {
       this.status = msg;
     });
-    this.sockets.subscribe('lock', data => {
-      this.isLocked = data.lockState;
-      this.remainingTime = data.time;
+    this.sockets.subscribe('locks', data => {
+      this.locks = data.locks;
+      this.timerStarts = data.timer;
+    });
+    this.sockets.subscribe('countdown', countdown => {
+      this.remainingTime = countdown;
     });
     this.initMap();
   },
@@ -75,14 +90,20 @@ export default {
     goToCharge() {
       this.$socket.emit('charge');
     },
-    pauseRobot() {
+    pauseOperation() {
       this.$socket.emit('pause');
     },
-    resumeRobot() {
+    resumeOperation() {
       this.$socket.emit('resume');
     },
-    cancelRobot() {
-      this.$socket.emit('cancel');
+    pauseRobot() {
+      this.$socket.emit('pause-robot');
+    },
+    resumeRobot() {
+      this.$socket.emit('resume-robot');
+    },
+    abortRobot() {
+      this.$socket.emit('abort-robot');
     },
     actionHandler(method) {
       this[method]();
@@ -127,20 +148,17 @@ export default {
       });
       gridClient.rootObject.addChild(robotMarker);
     }
-  },
-  watch: {
-    remainingTime() {
-      if (this.remainingTime > 0) {
-        setTimeout(() => this.remainingTime--, 1000);
-      }
-    }
   }
 };
 </script>
 
-<style scoped>
+<style>
+.v-btn__content {
+  width: 100%;
+}
 .big-text {
-  font-size: 2.5rem;
+  font-size: 2rem;
+  white-space: normal;
 }
 .row-height {
   height: 300px;

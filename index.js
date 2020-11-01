@@ -19,8 +19,16 @@ const {rosConfig, names, timer} = require('./utils/config');
 // ========== Variables ==========
 let clients = []; // {id: '', station: 'station1'}
 let battery = 100;
-let isLocked = false;
+let locks = {
+  opIsLocked: false, // true = locked, false = unlock
+  opIsPaused: false, // true = show paused, false = show resume
+  robotIsLocked: true,
+  robotIsPaused: true,
+  stationsIsLocked: false
+};
 let countdown = 0;
+let timeoutEvent = undefined;
+let countdownEvent = undefined;
 
 
 // ========== Init express and socket.io ==========
@@ -60,8 +68,8 @@ const rosRobotPosition = nh.subscribe(rosConfig.robotPosition[0], rosConfig.robo
 const rosBatteryLevel = nh.subscribe(rosConfig.batteryLevel[0], rosConfig.batteryLevel[1], (data) => {
   broadcastBatteryLevel(data.data);
 });
-const rosMissionComplete = nh.subscribe(rosConfig.missionComplete[0], rosConfig.missionComplete[1], (data) => {
-  broadcastMissionComplete(data.data);
+const rosMission = nh.subscribe(rosConfig.mission[0], rosConfig.mission[1], (data) => {
+  handleMissionStatus(data.data);
 });
 
 
@@ -69,15 +77,17 @@ const rosMissionComplete = nh.subscribe(rosConfig.missionComplete[0], rosConfig.
 io.on('connection', (socket) => {
   io.emit('station-names', names);
   io.emit('timer', timer);
-  io.emit('lock', {lockState: isLocked, time: 0});
-  io.emit('status-message', 'Starting up...');
+  io.emit('locks', {locks: locks, timer: true});
+  io.emit('status-message', 'Hello humans.');
 
   socket.on('client-station', station => newClient(socket.id, station));
   socket.on('to-station', station => toStation(station));
-  socket.on('pause', () => pauseRobot());
-  socket.on('resume', () => resumeRobot());
+  socket.on('pause', () => pauseOperation());
+  socket.on('resume', () => resumeOperation());
+  socket.on('pause-robot', () => pauseRobot());
+  socket.on('resume-robot', () => resumeRobot());
+  socket.on('abort-robot', () => abortRobot());
   socket.on('charge', () => toCharge());
-  socket.on('cancel', () => cancelRobot());
   socket.on('disconnect', () => clientDisconnected(socket.id));
 });
 setInterval(() => {
@@ -86,6 +96,26 @@ setInterval(() => {
 
 
 // ========== Functions ==========
+function handleMissionStatus(data) {
+  switch (data) {
+    case 0:
+      broadcastMissionCompleted();
+      break;
+    case 2:
+      broadcastMissionPaused();
+      break;
+    case 3:
+      broadcastMissionRunning();
+      break;
+    case 4:
+      broadcastMissionIdle();
+      break;
+    default:
+      console.error('Invalid mission code.')
+      break;
+  }
+}
+
 function broadcastStatusMessage(msg) {
   io.emit('status-message', msg);
 }
@@ -98,13 +128,42 @@ function broadcastBatteryLevel(bat) {
   battery = bat;
 }
 
-function broadcastMissionComplete(state) {
-  isLocked = state === 1 ? true : false;
-  io.emit('lock', {lockState: isLocked, time: timer.destination});
-  setTimeout(() => {
-    isLocked = false;
-    io.emit('lock', {lockState: isLocked, time: 0});
-  }, timer.destination);
+function broadcastMissionCompleted() {
+  locks = {
+    opIsLocked: false,
+    opIsPaused: false,
+    robotIsLocked: true,
+    robotIsPaused: true,
+    stationsIsLocked: true
+  };
+  io.emit('locks', {locks: locks, timer: true});
+  startLockTimer();
+}
+
+function broadcastMissionPaused() {
+  locks = {
+    opIsLocked: true,
+    opIsPaused: false,
+    robotIsLocked: false,
+    robotIsPaused: false,
+    stationsIsLocked: true
+  };
+  io.emit('locks', {locks: locks, timer: false});
+}
+
+function broadcastMissionRunning() {
+  locks = {
+    opIsLocked: true,
+    opIsPaused: false,
+    robotIsLocked: false,
+    robotIsPaused: true,
+    stationsIsLocked: true
+  };
+  io.emit('locks', {locks: locks, timer: false});
+}
+
+function broadcastMissionIdle() {
+
 }
 
 function newClient(id, station) {
@@ -125,27 +184,38 @@ function toStation(station) {
   }
 }
 
+function pauseOperation() {
+  locks = {
+    ...locks,
+    opIsPaused: false
+  };
+  io.emit('locks', {locks: locks, timer: true});
+  startLockTimer();
+}
+
+function resumeOperation() {
+  clearInterval(countdownEvent);
+  clearTimeout(timeoutEvent);
+  locks = {
+    ...locks,
+    opIsPaused: true
+  };
+  io.emit('locks', {locks: locks, timer: false});
+}
+
 function pauseRobot() {
-  ROS_BOOL.data = true;
-  rosPauseResumeRobot.publish(ROS_BOOL);
-  isLocked = true;
-  io.emit('lock', {lockState: isLocked, timer: timer.pause});
-  setTimeout(() => {
-    isLocked = false;
-    io.emit('lock', {lockState: isLocked, timer: 0});
-  }, timer.pause);
+  ROS_UINT8.data = 2;
+  rosPauseResumeRobot.publish(ROS_UINT8);
 }
 
 function resumeRobot() {
-  ROS_BOOL.data = false;
-  rosPauseResumeRobot.publish(ROS_BOOL);
-  isLocked = false;
-  io.emit('lock', {lockState: isLocked, timer: 0});
+  ROS_UINT8.data = 3;
+  rosPauseResumeRobot.publish(ROS_UINT8);
 }
 
-function cancelRobot() {
-  ROS_UINT8.data = 1;
-  rosCancelRobot.publish(ROS_UNIT8);
+function abortRobot() {
+  ROS_UINT8.data = 4;
+  rosPauseResumeRobot.publish(ROS_UINT8);
 }
 
 function toCharge() {
@@ -156,4 +226,21 @@ function toCharge() {
 function clientDisconnected(id) {
   clients.filter(client => client.id !== id);
   io.emit('clients', clients);
+}
+
+function startLockTimer() {
+  countdownEvent = setInterval(() => {
+    countdown--;
+    io.emit('countdown', countdown);
+  }, 1000);
+  timeoutEvent = setTimeout(() => {
+    locks = {
+      ...locks,
+      opIsPaused: true,
+      stationsIsLocked: false
+    };
+    io.emit('locks', {locks: locks, timer: false});
+    countdown = 0;
+    io.emit('countdown', countdown);
+  }, timer);
 }
