@@ -5,8 +5,7 @@ import VueSocketIO from 'vue-socket.io';
 
 Vue.config.productionTip = false
 
-// const socketHost = window.location.protocol + '//' + window.location.hostname + ':5021';
-const socketHost = 'http://192.168.0.103:5021';
+const socketHost = window.location.protocol + '//' + window.location.hostname + ':5021';
 Vue.use(new VueSocketIO({
   connection: socketHost
 }));
