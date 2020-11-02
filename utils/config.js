@@ -1,9 +1,9 @@
 const rosConfig = {
-  rosNode: 'nodename',
+  rosNode: 'KTPH_AIV',
   goToStation: ['/goal', 'std_msgs/UInt8'],
   pauseResumeRobot: ['/ui_robot_pra', 'std_msgs/UInt8'],
   statusMessage: ['/mission_status', 'std_msgs/String'],
-  batteryLevel: ['/merlin/battery_voltage', 'std_msgs/Float64'],
+  batteryLevel: ['/robot_battery_percent', 'std_msgs/Float64'],
   mission: ['/mrccc_status_ui', 'std_msgs/UInt8']
 };
 
