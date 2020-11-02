@@ -10,7 +10,7 @@ const rosConfig = {
 const names = [
   {
     id: 1,
-    name: '1. Micro Lab',
+    name: '1. Micro.b Lab',
     color: 'red'
   },
   {
@@ -25,7 +25,7 @@ const names = [
   },
   {
     id: 4,
-    name: '4. Special Lab',
+    name: '4. Anatomic.p Lab',
     color: 'red'
   }
 ];

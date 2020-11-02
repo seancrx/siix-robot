@@ -185,6 +185,7 @@ function toStation(station) {
 function pauseOperation() {
   locks = {
     ...locks,
+    stationsIsLocked: true,
     opIsPaused: false
   };
   io.emit('locks', {locks: locks, timer: true});
@@ -196,6 +197,7 @@ function resumeOperation() {
   clearTimeout(timeoutEvent);
   locks = {
     ...locks,
+    stationsIsLocked: false,
     opIsPaused: true
   };
   io.emit('locks', {locks: locks, timer: false});
@@ -227,6 +229,7 @@ function clientDisconnected(id) {
 }
 
 function startLockTimer() {
+  countdown = timer/1000;
   countdownEvent = setInterval(() => {
     countdown--;
     io.emit('countdown', countdown);
