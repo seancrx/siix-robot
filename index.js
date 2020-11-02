@@ -214,6 +214,7 @@ function resumeRobot() {
 }
 
 function abortRobot() {
+  resumeOperation();
   ROS_UINT8.data = 4;
   rosPauseResumeRobot.publish(ROS_UINT8);
 }
