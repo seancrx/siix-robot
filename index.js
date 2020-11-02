@@ -62,9 +62,9 @@ const rosPauseResumeRobot = nh.advertise(rosConfig.pauseResumeRobot[0], rosConfi
 const rosStatusMessage = nh.subscribe(rosConfig.statusMessage[0], rosConfig.statusMessage[1], (data) => {
   broadcastStatusMessage(data.data);
 });
-const rosRobotPosition = nh.subscribe(rosConfig.robotPosition[0], rosConfig.robotPosition[1], (data) => {
-  broadcastRobotPosition(data.data);
-});
+// const rosRobotPosition = nh.subscribe(rosConfig.robotPosition[0], rosConfig.robotPosition[1], (data) => {
+//   broadcastRobotPosition(data.data);
+// });
 const rosBatteryLevel = nh.subscribe(rosConfig.batteryLevel[0], rosConfig.batteryLevel[1], (data) => {
   broadcastBatteryLevel(data.data);
 });
@@ -120,9 +120,9 @@ function broadcastStatusMessage(msg) {
   io.emit('status-message', msg);
 }
 
-function broadcastRobotPosition(pos) {
-  io.emit('robot-pos', pos);
-}
+// function broadcastRobotPosition(pos) {
+//   io.emit('robot-pos', pos);
+// }
 
 function broadcastBatteryLevel(bat) {
   battery = bat;
