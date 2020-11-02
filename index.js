@@ -172,15 +172,13 @@ function newClient(id, station) {
 }
 
 function toStation(station) {
-  if (!isLocked) {
-    if (names.filter(name => name.id === station).length !== 0) {
-      ROS_UINT8.data = station;
-      rosGoToStation.publish(ROS_UINT8);
-      isLocked = true;
-      io.emit('lock', {lockState: isLocked, time: 0});
-    } else {
-      logger.error('Invalid station number requested.');
-    }
+  if (names.filter(name => name.id === station).length !== 0) {
+    ROS_UINT8.data = station;
+    rosGoToStation.publish(ROS_UINT8);
+    isLocked = true;
+    io.emit('lock', {lockState: isLocked, time: 0});
+  } else {
+    logger.error('Invalid station number requested.');
   }
 }
 
