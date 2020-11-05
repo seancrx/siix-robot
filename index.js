@@ -224,10 +224,9 @@ function resumeRobot() {
 function abortRobot() {
   locks = {
     ...locks,
-    opIsLocked: false,
-    opIsPaused: true,
+    opIsLocked: true,
     robotIsLocked: true,
-    stationsIsLocked: true
+    stationsIsLocked: false
   };
   io.emit('locks', {locks: locks, timer: false});
   ROS_UINT8.data = 4;
