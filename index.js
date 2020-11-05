@@ -172,14 +172,22 @@ function newClient(id, station) {
 }
 
 function toStation(station) {
-  if (names.filter(name => name.id === station).length !== 0) {
+  clearInterval(countdownEvent);
+  clearTimeout(timeoutEvent);
+  // if (names.filter(name => name.id === station).length !== 0) {
     ROS_UINT8.data = station;
     rosGoToStation.publish(ROS_UINT8);
-    isLocked = true;
-    io.emit('lock', {lockState: isLocked, time: 0});
-  } else {
-    logger.error('Invalid station number requested.');
-  }
+    locks = {
+      opIsLocked: true,
+      opIsPaused: true,
+      robotIsLocked: false,
+      robotIsPaused: true,
+      stationsIsLocked: true
+    };
+    io.emit('locks', {locks: locks, timer: false});
+  // } else {
+  //   logger.error('Invalid station number requested.');
+  // }
 }
 
 function pauseOperation() {
@@ -214,7 +222,14 @@ function resumeRobot() {
 }
 
 function abortRobot() {
-  resumeOperation();
+  locks = {
+    ...locks,
+    opIsLocked: false,
+    opIsPaused: true,
+    robotIsLocked: true,
+    stationsIsLocked: true
+  };
+  io.emit('locks', {locks: locks, timer: false});
   ROS_UINT8.data = 4;
   rosPauseResumeRobot.publish(ROS_UINT8);
 }

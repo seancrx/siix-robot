@@ -12,13 +12,13 @@
       </v-row>
     </v-container>
     <div class="d-flex flex-wrap justify-space-around pb-8 pt-4">
-      <v-card :disabled="locks.stationIsLocked" @click="goToCharge" height="100px" min-width="200px" x-large :class="{'card-disabled': locks.stationsIsLocked}" :color="locks.stationsIsLocked ? '' : 'blue lighten-2'" class="ma-2 d-flex justify-center align-center flex-column action">
+      <v-card :disabled="locks.stationIsLocked" @click="goToStation(5)" height="100px" min-width="200px" x-large :class="{'card-disabled': locks.stationsIsLocked}" :color="locks.stationsIsLocked ? '' : 'blue lighten-2'" class="ma-2 d-flex justify-center align-center flex-column action">
         <v-icon style="font-size:2rem;">mdi-power-plug-outline</v-icon>
         Origin/Charge
       </v-card>
       <v-card :disabled="locks.opIsLocked" v-if="!locks.opIsPaused" @click="resumeOperation" height="100px" min-width="200px" x-large :class="{'card-disabled': locks.opIsLocked}" :color="locks.opIsLocked ? '' : 'green lighten-2'" class="ma-2 d-flex justify-center align-center flex-column action">
         <v-icon style="font-size:2rem;">mdi-play</v-icon>
-        {{remainingTime === 0 ? `Operation Resume` : `Operation Resume (${remainingTime})`}}
+        {{remainingTime === 0 ? `Operation Resume` : `Operation Resume (${fmtMSS(remainingTime)})`}}
       </v-card>
       <v-card :disabled="locks.opIsLocked" v-else @click="pauseOperation" height="100px" min-width="200px" x-large :class="{'card-disabled': locks.opIsLocked}" :color="locks.opIsLocked ? '' : 'yellow lighten-2'" class="ma-2 d-flex justify-center align-center flex-column action">
         <v-icon style="font-size:2rem;">mdi-pause</v-icon>
@@ -110,6 +110,9 @@ export default {
     },
     unlockButtons() {
       this.isLocked = false;
+    },
+    fmtMSS(s) {
+      return(s-(s%=60))/60+(9<s?':':':0')+s;
     },
     initMap() {
       var ros = new ROSLIB.Ros({

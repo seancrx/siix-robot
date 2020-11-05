@@ -30,6 +30,6 @@ const names = [
   }
 ];
 
-const timer = 6000000;
+const timer = 600000;
 
 module.exports = {rosConfig, names, timer};
