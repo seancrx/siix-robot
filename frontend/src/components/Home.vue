@@ -11,33 +11,33 @@
         </v-col>
       </v-row>
     </v-container>
-    <div class="d-flex flex-wrap justify-space-around pb-8 pt-4">
-      <v-card :disabled="locks.stationIsLocked" @click="goToStation(5)" height="100px" min-width="200px" x-large :class="{'card-disabled': locks.stationsIsLocked}" :color="locks.stationsIsLocked ? '' : 'blue lighten-2'" class="ma-2 d-flex justify-center align-center flex-column action">
+    <div class="d-flex flex-wrap justify-space-around pb-4 pt-4">
+      <!-- <v-card :disabled="locks.stationIsLocked" @click="goToStation(5)" height="100px" min-width="200px" x-large :class="{'card-disabled': locks.stationsIsLocked}" :color="locks.stationsIsLocked ? '' : 'blue lighten-2'" class="ma-2 d-flex justify-center align-center flex-column action">
         <v-icon style="font-size:2rem;">mdi-power-plug-outline</v-icon>
         Origin/Charge
-      </v-card>
-      <v-card :disabled="locks.opIsLocked" v-if="!locks.opIsPaused" @click="resumeOperation" height="100px" min-width="200px" x-large :class="{'card-disabled': locks.opIsLocked}" :color="locks.opIsLocked ? '' : 'green lighten-2'" class="ma-2 d-flex justify-center align-center flex-column action">
-        <v-icon style="font-size:2rem;">mdi-play</v-icon>
-        {{remainingTime === 0 ? `Operation Resume` : `Operation Resume (${fmtMSS(remainingTime)})`}}
-      </v-card>
-      <v-card :disabled="locks.opIsLocked" v-else @click="pauseOperation" height="100px" min-width="200px" x-large :class="{'card-disabled': locks.opIsLocked}" :color="locks.opIsLocked ? '' : 'yellow lighten-2'" class="ma-2 d-flex justify-center align-center flex-column action">
-        <v-icon style="font-size:2rem;">mdi-pause</v-icon>
-        Operation Pause
-      </v-card>
-      <v-card :disabled="locks.robotIsLocked" v-if="!locks.robotIsPaused" @click="resumeRobot" height="100px" min-width="200px" x-large :class="{'card-disabled': locks.robotIsLocked}" :color="locks.robotIsLocked ? '' : 'green lighten-2'" class="ma-2 d-flex justify-center align-center flex-column action">
-        <v-icon style="font-size:2rem;">mdi-play</v-icon>
-        Robot Resume
-      </v-card>
-      <v-card :disabled="locks.robotIsLocked" v-else @click="pauseRobot" height="100px" min-width="200px" x-large :class="{'card-disabled': locks.robotIsLocked}" :color="locks.robotIsLocked ? '' : 'yellow lighten-2'" class="ma-2 d-flex justify-center align-center flex-column action">
-        <v-icon style="font-size:2rem;">mdi-pause</v-icon>
-        Robot Pause
-      </v-card>
-      <v-card @click="abortRobot" height="100px" min-width="200px" x-large color="error" class="ma-2 d-flex justify-center align-center flex-column action">
+      </v-card> -->
+      <v-card @click="abortRobot" height="80px" min-width="150px" x-large color="error" class="pa-2 ma-2 d-flex justify-center align-center flex-column action">
         <v-icon style="font-size:2rem;">mdi-cancel</v-icon>
         Abort
       </v-card>
+      <v-card :disabled="locks.opIsLocked" v-if="!locks.opIsPaused" @click="resumeOperation" height="80px" min-width="150px" x-large :class="{'card-disabled': locks.opIsLocked}" :color="locks.opIsLocked ? '' : 'green lighten-3'" class="pa-2 ma-2 d-flex justify-center align-center flex-column action">
+        <v-icon style="font-size:2rem;">mdi-play</v-icon>
+        {{remainingTime === 0 ? `Operation Resume` : `Operation Resume (${fmtMSS(remainingTime)})`}}
+      </v-card>
+      <v-card :disabled="locks.opIsLocked" v-else @click="pauseOperation" height="80px" min-width="150px" x-large :class="{'card-disabled': locks.opIsLocked}" :color="locks.opIsLocked ? '' : 'yellow lighten-2'" class="pa-2 ma-2 d-flex justify-center align-center flex-column action">
+        <v-icon style="font-size:2rem;">mdi-pause</v-icon>
+        Operation Pause
+      </v-card>
+      <v-card :disabled="locks.robotIsLocked" v-if="!locks.robotIsPaused" @click="resumeRobot" height="80px" min-width="150px" x-large :class="{'card-disabled': locks.robotIsLocked}" :color="locks.robotIsLocked ? '' : 'green lighten-3'" class="pa-2 ma-2 d-flex justify-center align-center flex-column action">
+        <v-icon style="font-size:2rem;">mdi-play</v-icon>
+        Robot Resume
+      </v-card>
+      <v-card :disabled="locks.robotIsLocked" v-else @click="pauseRobot" height="80px" min-width="150px" x-large :class="{'card-disabled': locks.robotIsLocked}" :color="locks.robotIsLocked ? '' : 'yellow lighten-2'" class="pa-2 ma-2 d-flex justify-center align-center flex-column action">
+        <v-icon style="font-size:2rem;">mdi-pause</v-icon>
+        Robot Pause
+      </v-card>
     </div>
-    <div class="pa-8 d-flex justify-center">
+    <div class="d-flex justify-center">
       <div class="mapCanvas" id="map"></div>
     </div>
   </div>
@@ -160,11 +160,11 @@ export default {
   width: 100%;
 }
 .big-text {
-  font-size: 2rem;
+  font-size: 1.7rem;
   white-space: normal;
 }
 .row-height {
-  height: 300px;
+  height: 250px;
 }
 .action {
   font-size: 1.5rem;
