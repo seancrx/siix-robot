@@ -79,6 +79,7 @@ io.on('connection', (socket) => {
   io.emit('timer', timer);
   io.emit('locks', {locks: locks, timer: true});
   io.emit('status-message', 'Hello humans.');
+  io.emit('countdown', countdown);
 
   socket.on('client-station', station => newClient(socket.id, station));
   socket.on('to-station', station => toStation(station));
