@@ -248,7 +248,9 @@ function startLockTimer() {
   countdown = timer/1000;
   countdownEvent = setInterval(() => {
     countdown--;
-    io.emit('countdown', countdown);
+    if (countdown >= 0) {
+      io.emit('countdown', countdown);
+    }
   }, 1000);
   timeoutEvent = setTimeout(() => {
     locks = {
@@ -257,6 +259,7 @@ function startLockTimer() {
       stationsIsLocked: false
     };
     io.emit('locks', {locks: locks, timer: false});
+    clearInterval(countdownEvent);
     countdown = 0;
     io.emit('countdown', countdown);
   }, timer);
